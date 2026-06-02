@@ -1,0 +1,43 @@
+{
+  "name": "xtimated-search",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint"
+  },
+  "dependencies": {
+    "@heroicons/react": "^2.1.1",
+    "@mozilla/readability": "^0.5.0",
+    "@supabase/ssr": "^0.3.0",
+    "jsdom": "^24.0.0",
+    "metascraper": "^5.45.5",
+    "metascraper-author": "^5.45.5",
+    "metascraper-date": "^5.45.5",
+    "metascraper-description": "^5.45.5",
+    "metascraper-image": "^5.45.5",
+    "metascraper-publisher": "^5.45.5",
+    "metascraper-title": "^5.45.5",
+    "next": "14.2.5",
+    "next-themes": "^0.3.0",
+    "pdf-parse": "^1.1.1",
+    "react": "^18",
+    "react-dom": "^18",
+    "swr": "^2.2.5"
+  },
+  "devDependencies": {
+    "@types/jsdom": "^21.1.6",
+    "@types/node": "^20",
+    "@types/pdf-parse": "^1.1.4",
+    "@types/react": "^18",
+    "@types/react-dom": "^18",
+    "autoprefixer": "^10.0.1",
+    "eslint": "^8",
+    "eslint-config-next": "14.2.5",
+    "postcss": "^8",
+    "tailwindcss": "^3.3.0",
+    "typescript": "^5"
+  }
+}
