@@ -104,7 +104,7 @@ function extractFallback(html: string): number {
 
 export async function scrapeArticle(url: string): Promise<ArticleResult> {
   const controller = new AbortController()
-  const timeout = setTimeout(() => controller.abort(), 15000)
+  const timeout = setTimeout(() => controller.abort(), 8000)
 
   let html = ''
   let contentType = 'text/html'

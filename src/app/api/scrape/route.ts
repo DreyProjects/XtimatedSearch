@@ -1,3 +1,5 @@
+export const runtime = 'nodejs'
+
 import { NextRequest, NextResponse } from 'next/server'
 import { getAuthFromRequest } from '@/lib/supabase/server'
 import { scrapeUrl } from '@/lib/scraper'

@@ -26,7 +26,7 @@ export async function scrapePdf(url: string): Promise<PdfResult> {
   let title = ''
 
   try {
-    const res = await fetch(url, { signal: AbortSignal.timeout(20000) })
+    const res = await fetch(url, { signal: AbortSignal.timeout(8000) })
     const buffer = await res.arrayBuffer()
     const pdfParse = (await import('pdf-parse')).default
     const data = await pdfParse(Buffer.from(buffer))
