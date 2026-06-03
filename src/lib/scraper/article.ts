@@ -13,6 +13,29 @@ export interface ArticleResult {
 }
 
 // ---------------------------------------------------------------------------
+// Decodificación de entidades HTML
+// ---------------------------------------------------------------------------
+
+function decodeEntities(str: string): string {
+  return str
+    .replace(/&#(\d+);/g, (_, n) => String.fromCharCode(parseInt(n)))
+    .replace(/&#x([0-9a-fA-F]+);/g, (_, h) => String.fromCharCode(parseInt(h, 16)))
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&apos;/g, "'")
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&ndash;/g, '–')
+    .replace(/&mdash;/g, '—')
+    .replace(/&lsquo;/g, '‘')
+    .replace(/&rsquo;/g, '’')
+    .replace(/&ldquo;/g, '“')
+    .replace(/&rdquo;/g, '”')
+    .trim()
+}
+
+// ---------------------------------------------------------------------------
 // Metadatos (regex, sin JSDOM)
 // ---------------------------------------------------------------------------
 
@@ -25,7 +48,7 @@ function extractMeta(html: string, property: string): string {
   ]
   for (const re of patterns) {
     const m = html.match(re)
-    if (m?.[1]) return m[1].trim()
+    if (m?.[1]) return decodeEntities(m[1])
   }
   return ''
 }
@@ -155,9 +178,9 @@ export async function scrapeArticle(url: string): Promise<ArticleResult> {
   const jsonLd = extractJsonLd(html)
 
   const title =
-    (jsonLd['headline'] as string) ||
+    decodeEntities((jsonLd['headline'] as string) || '') ||
     extractMeta(html, 'og:title') ||
-    html.match(/<title[^>]*>([^<]+)<\/title>/i)?.[1]?.trim() ||
+    decodeEntities(html.match(/<title[^>]*>([^<]+)<\/title>/i)?.[1] ?? '') ||
     url
 
   const description =
@@ -173,15 +196,17 @@ export async function scrapeArticle(url: string): Promise<ArticleResult> {
     ''
 
   const authorRaw = jsonLd['author'] as { name?: string } | string | undefined
-  const author =
+  const author = decodeEntities(
     (typeof authorRaw === 'string' ? authorRaw : authorRaw?.name) ||
     extractMeta(html, 'article:author') ||
     extractMeta(html, 'author') ||
     ''
+  )
 
-  const site_name =
+  const site_name = decodeEntities(
     extractMeta(html, 'og:site_name') ||
     new URL(url).hostname.replace('www.', '')
+  )
 
   const published_at =
     (jsonLd['datePublished'] as string) ||

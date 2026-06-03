@@ -1,37 +1,12 @@
 import type { LinkWithRelations } from './index'
+import { decodeEntities, formatAuthorApa } from './authorFormat'
 
 const MONTHS_ES = [
   'enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio',
   'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre',
 ]
 
-// Detecta si un string parece nombre de persona (ej. "Juan García") vs organización ("MIT Review")
-function isPersonName(str: string): boolean {
-  const words = str.trim().split(/\s+/)
-  if (words.length < 2 || words.length > 4) return false
-  // Cada palabra debe iniciar con mayúscula y contener solo letras
-  return words.every(w => /^[A-ZÁÉÍÓÚÜÑ][a-záéíóúüñA-ZÁÉÍÓÚÜÑ'-]+$/.test(w))
-}
-
-// "Juan García" → "García, J."  |  "María José López" → "López, M. J."
-// Organizaciones y canales se dejan igual
-function formatAuthorApa(raw: string): string {
-  if (!raw) return 'Autor desconocido'
-  // Ya tiene formato "Apellido, I."
-  if (/^[^\s,]+,\s+[A-ZÁÉÍÓÚÜÑ]\./.test(raw)) return raw
-  if (!isPersonName(raw)) return raw
-
-  const words = raw.trim().split(/\s+/)
-  const lastName = words[words.length - 1]
-  const initials = words.slice(0, -1).map(w => `${w[0].toUpperCase()}.`).join(' ')
-  return `${lastName}, ${initials}`
-}
-
-interface ApaDate {
-  year: string
-  full: string   // para artículos/videos: "2023, 15 de enero"
-  yearOnly: string // para PDFs: "2023"
-}
+interface ApaDate { year: string; full: string; yearOnly: string }
 
 function formatApaDate(dateStr: string | null | undefined): ApaDate {
   if (!dateStr) return { year: 's.f.', full: 's.f.', yearOnly: 's.f.' }
@@ -47,29 +22,29 @@ function formatApaDate(dateStr: string | null | undefined): ApaDate {
   }
 }
 
+function clean(str: string | null | undefined): string {
+  return decodeEntities(str ?? '')
+}
+
 function formatCitation(link: LinkWithRelations): string {
-  const rawAuthor = link.author || link.site_name || ''
-  const author = formatAuthorApa(rawAuthor)
+  const author = formatAuthorApa(clean(link.author) || clean(link.site_name) || '')
   const date = formatApaDate(link.published_at)
-  const title = link.title || link.url
+  const title = clean(link.title) || link.url
   const url = link.url
-  const siteName = link.site_name || ''
+  const siteName = clean(link.site_name)
 
   switch (link.content_type) {
 
     case 'video': {
-      // APA7 video YouTube: Canal [Canal]. (Año, día de mes). Título [Video]. YouTube. URL
-      // Si el autor es diferente del canal, se usa: Autor [Canal]. ...
-      const channel = link.site_name === 'YouTube' || link.site_name === 'Vimeo'
-        ? (link.author || link.site_name || 'Desconocido')
-        : (link.author || 'Desconocido')
-      const platform = link.site_name || 'YouTube'
-      const authorFormatted = isPersonName(channel) ? formatAuthorApa(channel) : channel
-      return `${authorFormatted} [${channel}]. (${date.full}). ${title} [Video]. ${platform}. ${url}`
+      // APA7: Canal [Canal]. (Año, día de mes). Título [Video]. Plataforma. URL
+      const channel = clean(link.author) || clean(link.site_name) || 'Desconocido'
+      const platform = siteName || 'YouTube'
+      const channelFormatted = formatAuthorApa(channel)
+      return `${channelFormatted} [${channel}]. (${date.full}). ${title} [Video]. ${platform}. ${url}`
     }
 
     case 'podcast':
-      // APA7: Apellido, I. (Presentador). (Año, día de mes). Título [Episodio de podcast]. En Nombre del podcast. URL
+      // APA7: Apellido, I. (Presentador). (Año, día de mes). Título [Episodio de podcast]. En Podcast. URL
       return `${author} (Presentador). (${date.full}). ${title} [Episodio de podcast]. En ${siteName || 'Podcast'}. ${url}`
 
     case 'pdf':
@@ -85,6 +60,5 @@ function formatCitation(link: LinkWithRelations): string {
 
 export function formatApa(links: LinkWithRelations[]): string {
   if (links.length === 0) return 'Referencias\n\n(sin enlaces seleccionados)'
-  const citations = links.map(formatCitation)
-  return `Referencias\n\n${citations.join('\n\n')}`
+  return `Referencias\n\n${links.map(formatCitation).join('\n\n')}`
 }
