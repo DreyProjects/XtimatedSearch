@@ -122,6 +122,51 @@ function extractFallback(html: string): number {
 }
 
 // ---------------------------------------------------------------------------
+// Extracción de fecha de publicación
+// ---------------------------------------------------------------------------
+
+function extractDate(html: string, jsonLd: Record<string, unknown>, url: string): string | null {
+  // JSON-LD: más confiable, refleja intención editorial
+  const jsonLdDate = (jsonLd['datePublished'] as string) || (jsonLd['dateModified'] as string)
+  if (jsonLdDate) return jsonLdDate
+
+  // Meta tags ordenados por confiabilidad
+  const metaNames = [
+    'article:published_time',
+    'og:article:published_time',
+    'date',
+    'pubdate',
+    'publish_date',
+    'published_date',
+    'DC.date',
+    'DC.Date.Issued',
+    'article:modified_time',
+  ]
+  for (const name of metaNames) {
+    const val = extractMeta(html, name)
+    if (val) return val
+  }
+
+  // <time pubdate datetime="..."> — marcador semántico HTML5
+  let m = html.match(/<time\b[^>]*\bpubdate\b[^>]*\bdatetime=["']([^"']+)["'][^>]*>/i)
+    ?? html.match(/<time\b[^>]*\bdatetime=["']([^"']+)["'][^>]*\bpubdate\b[^>]*>/i)
+  if (m?.[1]) return m[1]
+
+  // Cualquier <time datetime="..."> como fallback
+  m = html.match(/<time\b[^>]+\bdatetime=["']([^"']+)["'][^>]*>/i)
+  if (m?.[1]) return m[1]
+
+  // Patrón de fecha en URL: /2023/01/15/ (WordPress y CMSes similares)
+  const urlFull = url.match(/\/(\d{4})\/(\d{2})\/(\d{2})\//)
+  if (urlFull) return `${urlFull[1]}-${urlFull[2]}-${urlFull[3]}`
+
+  const urlYM = url.match(/\/(\d{4})\/(\d{2})\//)
+  if (urlYM) return `${urlYM[1]}-${urlYM[2]}`
+
+  return null
+}
+
+// ---------------------------------------------------------------------------
 // Scraper principal
 // ---------------------------------------------------------------------------
 
@@ -208,10 +253,7 @@ export async function scrapeArticle(url: string): Promise<ArticleResult> {
     new URL(url).hostname.replace('www.', '')
   )
 
-  const published_at =
-    (jsonLd['datePublished'] as string) ||
-    extractMeta(html, 'article:published_time') ||
-    null
+  const published_at = extractDate(html, jsonLd, url)
 
   // Extraer texto con Readability; fallback a regex si falla
   let wordCount = await extractWithReadability(html, url)

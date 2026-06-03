@@ -1,15 +1,12 @@
 import type { LinkWithRelations } from './index'
 import { decodeEntities, formatAuthorVancouver } from './authorFormat'
+import { parseDate } from './dateFormat'
 
 const MONTHS_SHORT = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic']
 
 function formatYear(dateStr: string | null | undefined): string {
-  if (!dateStr) return 'fecha desconocida'
-  try {
-    const d = new Date(dateStr)
-    if (isNaN(d.getTime())) return 'fecha desconocida'
-    return d.getFullYear().toString()
-  } catch { return 'fecha desconocida' }
+  const d = parseDate(dateStr)
+  return d ? d.year.toString() : 'fecha desconocida'
 }
 
 function formatCitedDate(): string {

@@ -1,5 +1,6 @@
 import type { LinkWithRelations } from './index'
 import { decodeEntities, formatAuthorApa } from './authorFormat'
+import { parseDate } from './dateFormat'
 
 const MONTHS_ES = [
   'enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio',
@@ -9,17 +10,22 @@ const MONTHS_ES = [
 interface ApaDate { year: string; full: string; yearOnly: string }
 
 function formatApaDate(dateStr: string | null | undefined): ApaDate {
-  if (!dateStr) return { year: 's.f.', full: 's.f.', yearOnly: 's.f.' }
-  try {
-    const d = new Date(dateStr)
-    if (isNaN(d.getTime())) return { year: 's.f.', full: 's.f.', yearOnly: 's.f.' }
-    const year = d.getFullYear().toString()
-    const day = d.getDate()
-    const month = MONTHS_ES[d.getMonth()]
-    return { year, full: `${year}, ${day} de ${month}`, yearOnly: year }
-  } catch {
-    return { year: 's.f.', full: 's.f.', yearOnly: 's.f.' }
+  const d = parseDate(dateStr)
+  if (!d) return { year: 's.f.', full: 's.f.', yearOnly: 's.f.' }
+
+  const year = d.year.toString()
+
+  if (d.month !== null && d.day !== null) {
+    const month = MONTHS_ES[d.month - 1]
+    return { year, full: `${year}, ${d.day} de ${month}`, yearOnly: year }
   }
+
+  if (d.month !== null) {
+    const month = MONTHS_ES[d.month - 1]
+    return { year, full: `${year}, ${month}`, yearOnly: year }
+  }
+
+  return { year, full: year, yearOnly: year }
 }
 
 function clean(str: string | null | undefined): string {
