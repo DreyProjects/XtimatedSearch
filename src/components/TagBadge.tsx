@@ -7,7 +7,7 @@ interface Props {
 export default function TagBadge({ name, color = '#8b5cf6', onRemove }: Props) {
   return (
     <span
-      className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium"
+      className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium transition-transform duration-150 hover:scale-105"
       style={{ backgroundColor: `${color}22`, color }}
     >
       {name}

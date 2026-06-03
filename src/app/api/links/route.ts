@@ -1,10 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { getAuthFromRequest } from '@/lib/supabase/server'
 
 export async function GET(request: NextRequest) {
-  const supabase = createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const { user, supabase } = await getAuthFromRequest(request)
+  if (!user || !supabase) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const { searchParams } = new URL(request.url)
   const folderId = searchParams.get('folder_id')
@@ -15,40 +14,49 @@ export async function GET(request: NextRequest) {
 
   let query = supabase
     .from('links')
-    .select(`
-      *,
-      folders(name, color),
-      link_tags(tags(id, name, color))
-    `)
+    .select(`*, folders(name, color), link_tags(tags(id, name, color))`)
     .eq('user_id', user.id)
+    .is('deleted_at', null)
     .order('created_at', { ascending: false })
 
   if (folderId) query = query.eq('folder_id', folderId)
   if (contentType) query = query.eq('content_type', contentType)
-  if (isRead !== null) query = query.eq('is_read', isRead === 'true')
+  // Bug fix: only apply isRead filter when value is explicitly 'true' or 'false'
+  if (isRead === 'true' || isRead === 'false') query = query.eq('is_read', isRead === 'true')
   if (search) query = query.ilike('title', `%${search}%`)
   if (tagId) {
-    const { data: tagLinks } = await supabase
-      .from('link_tags')
-      .select('link_id')
-      .eq('tag_id', tagId)
+    const { data: tagLinks } = await supabase.from('link_tags').select('link_id').eq('tag_id', tagId)
     const ids = tagLinks?.map(t => t.link_id) ?? []
     if (ids.length === 0) return NextResponse.json([])
     query = query.in('id', ids)
   }
 
   const { data, error } = await query
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+
+  if (error) {
+    // Columna deleted_at no existe aún → devolver sin filtro soft-delete
+    if (error.message.includes('deleted_at')) {
+      const { data: fallback, error: fallbackErr } = await supabase
+        .from('links')
+        .select(`*, folders(name, color), link_tags(tags(id, name, color))`)
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
+      if (fallbackErr) return NextResponse.json({ error: fallbackErr.message }, { status: 500 })
+      return NextResponse.json(fallback ?? [])
+    }
+    return NextResponse.json({ error: error.message }, { status: 500 })
+  }
+
   return NextResponse.json(data)
 }
 
 export async function POST(request: NextRequest) {
-  const supabase = createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const { user, supabase } = await getAuthFromRequest(request)
+  if (!user || !supabase) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const body = await request.json()
-  const { tag_ids, ...linkData } = body
+  // Excluir campos que no existen en la tabla
+  const { tag_ids, reading_speed: _rs, ...linkData } = body
 
   const { data: link, error } = await supabase
     .from('links')

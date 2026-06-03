@@ -3,10 +3,17 @@
 import { FolderIcon, FolderOpenIcon, PlusIcon, TrashIcon } from '@heroicons/react/24/outline'
 import { useState } from 'react'
 import type { Folder } from '@/hooks/useFolders'
+import { formatTime } from '@/lib/time'
+
+export interface FolderStats {
+  count: number
+  totalSeconds: number
+}
 
 interface Props {
   folders: Folder[]
   selectedFolderId?: string
+  folderStats?: Record<string, FolderStats>
   onSelect: (id: string | undefined) => void
   onCreateFolder: (data: { name: string; color?: string; parent_id?: string }) => void
   onDeleteFolder: (id: string) => void
@@ -19,6 +26,7 @@ function FolderNode({
   children,
   depth,
   isSelected,
+  stats,
   onSelect,
   onDelete,
 }: {
@@ -26,6 +34,7 @@ function FolderNode({
   children: React.ReactNode
   depth: number
   isSelected: boolean
+  stats?: FolderStats
   onSelect: () => void
   onDelete: () => void
 }) {
@@ -41,15 +50,25 @@ function FolderNode({
         style={{ paddingLeft: `${8 + depth * 16}px` }}
         onClick={onSelect}
       >
-        {open ? (
-          <FolderOpenIcon className="w-4 h-4 flex-shrink-0" style={{ color: folder.color }} />
-        ) : (
-          <FolderIcon className="w-4 h-4 flex-shrink-0" style={{ color: folder.color }} />
-        )}
+        <button
+          onClick={e => { e.stopPropagation(); setOpen(!open) }}
+          className="flex-shrink-0"
+        >
+          {open ? (
+            <FolderOpenIcon className="w-4 h-4" style={{ color: folder.color }} />
+          ) : (
+            <FolderIcon className="w-4 h-4" style={{ color: folder.color }} />
+          )}
+        </button>
         <span className="flex-1 truncate">{folder.name}</span>
+        {stats && stats.count > 0 && (
+          <span className="text-xs text-zinc-400 dark:text-zinc-500 flex-shrink-0">
+            {formatTime(stats.totalSeconds)}
+          </span>
+        )}
         <button
           onClick={e => { e.stopPropagation(); onDelete() }}
-          className="opacity-0 group-hover:opacity-100 p-0.5 hover:text-red-500 transition-all"
+          className="opacity-0 group-hover:opacity-100 p-0.5 hover:text-red-500 transition-all flex-shrink-0"
         >
           <TrashIcon className="w-3.5 h-3.5" />
         </button>
@@ -62,6 +81,7 @@ function FolderNode({
 export default function FolderTree({
   folders,
   selectedFolderId,
+  folderStats = {},
   onSelect,
   onCreateFolder,
   onDeleteFolder,
@@ -80,6 +100,7 @@ export default function FolderTree({
         folder={folder}
         depth={depth}
         isSelected={selectedFolderId === folder.id}
+        stats={folderStats[folder.id]}
         onSelect={() => onSelect(folder.id)}
         onDelete={() => onDeleteFolder(folder.id)}
       >

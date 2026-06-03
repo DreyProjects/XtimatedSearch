@@ -1,6 +1,7 @@
 import useSWR, { mutate as globalMutate } from 'swr'
+import { fetchWithAuth } from '@/lib/fetchWithAuth'
 
-const fetcher = (url: string) => fetch(url).then(r => r.json())
+const fetcher = (url: string) => fetchWithAuth(url).then(r => r.json())
 
 export interface Folder {
   id: string
@@ -16,22 +17,14 @@ export function useFolders() {
   const { data, error, isLoading } = useSWR<Folder[]>(KEY, fetcher)
 
   async function createFolder(body: { name: string; color?: string; parent_id?: string }) {
-    await fetch(KEY, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
-    })
+    await fetchWithAuth(KEY, { method: 'POST', body: JSON.stringify(body) })
     globalMutate(KEY)
   }
 
   async function deleteFolder(id: string) {
-    await fetch(KEY, {
-      method: 'DELETE',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id }),
-    })
+    await fetchWithAuth(KEY, { method: 'DELETE', body: JSON.stringify({ id }) })
     globalMutate(KEY)
   }
 
-  return { folders: data ?? [], error, isLoading, createFolder, deleteFolder }
+  return { folders: Array.isArray(data) ? data : [], error, isLoading, createFolder, deleteFolder }
 }

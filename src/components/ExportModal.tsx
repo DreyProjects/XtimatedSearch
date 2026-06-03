@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { XMarkIcon, ArrowDownTrayIcon } from '@heroicons/react/24/outline'
+import { fetchWithAuth } from '@/lib/fetchWithAuth'
 
 interface Props {
   selectedIds: string[]
@@ -24,7 +25,7 @@ export default function ExportModal({ selectedIds, onClose }: Props) {
     setDownloading(true)
     try {
       const params = new URLSearchParams({ format, ids: selectedIds.join(',') })
-      const res = await fetch(`/api/export?${params}`)
+      const res = await fetchWithAuth(`/api/export?${params}`)
       if (!res.ok) throw new Error('Error al exportar')
       const blob = await res.blob()
       const url = URL.createObjectURL(blob)
@@ -44,8 +45,8 @@ export default function ExportModal({ selectedIds, onClose }: Props) {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-      <div className="w-full max-w-md bg-white dark:bg-zinc-900 rounded-2xl shadow-xl border border-zinc-200 dark:border-zinc-800">
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center sm:p-4 bg-black/50 backdrop-blur-sm animate-fade-in">
+      <div className="w-full sm:max-w-md bg-white dark:bg-zinc-900 rounded-t-2xl sm:rounded-2xl shadow-xl border-t border-x sm:border border-zinc-200 dark:border-zinc-800 animate-sheet-up sm:animate-scale-in">
         <div className="flex items-center justify-between p-4 border-b border-zinc-200 dark:border-zinc-800">
           <h2 className="font-semibold text-lg">Exportar links</h2>
           <button onClick={onClose} className="p-1 rounded hover:bg-zinc-100 dark:hover:bg-zinc-800">

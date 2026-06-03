@@ -1,6 +1,7 @@
 import useSWR, { mutate as globalMutate } from 'swr'
+import { fetchWithAuth } from '@/lib/fetchWithAuth'
 
-const fetcher = (url: string) => fetch(url).then(r => r.json())
+const fetcher = (url: string) => fetchWithAuth(url).then(r => r.json())
 
 export interface Link {
   id: string
@@ -14,6 +15,7 @@ export interface Link {
   content_type: string | null
   estimated_seconds: number | null
   word_count: number | null
+  deleted_at?: string | null
   is_read: boolean | null
   folder_id: string | null
   created_at: string
@@ -41,25 +43,22 @@ export function useLinks(options: UseLinksOptions = {}) {
   const { data, error, isLoading } = useSWR<Link[]>(key, fetcher)
 
   async function addLink(body: Record<string, unknown>) {
-    await fetch('/api/links', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
-    })
+    const res = await fetchWithAuth('/api/links', { method: 'POST', body: JSON.stringify(body) })
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}))
+      throw new Error(err.error || `Error ${res.status}`)
+    }
     globalMutate((k: string) => typeof k === 'string' && k.startsWith('/api/links'))
   }
 
   async function updateLink(id: string, body: Record<string, unknown>) {
-    await fetch(`/api/links/${id}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
-    })
+    await fetchWithAuth(`/api/links/${id}`, { method: 'PATCH', body: JSON.stringify(body) })
     globalMutate((k: string) => typeof k === 'string' && k.startsWith('/api/links'))
   }
 
   async function deleteLink(id: string) {
-    await fetch(`/api/links/${id}`, { method: 'DELETE' })
+    // Soft delete → mueve a papelera
+    await fetchWithAuth(`/api/links/${id}`, { method: 'DELETE' })
     globalMutate((k: string) => typeof k === 'string' && k.startsWith('/api/links'))
   }
 
@@ -70,5 +69,5 @@ export function useLinks(options: UseLinksOptions = {}) {
     })
   }
 
-  return { links: data ?? [], error, isLoading, addLink, updateLink, deleteLink, toggleRead }
+  return { links: Array.isArray(data) ? data : [], error, isLoading, addLink, updateLink, deleteLink, toggleRead }
 }

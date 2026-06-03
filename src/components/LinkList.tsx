@@ -42,7 +42,7 @@ export default function LinkList({
 
   if (links.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center py-24 text-zinc-400">
+      <div className="flex flex-col items-center justify-center py-24 text-zinc-400 animate-fade-up">
         <p className="text-lg font-medium">No hay links aquí</p>
         <p className="text-sm mt-1">Pega una URL para empezar</p>
       </div>
@@ -51,10 +51,11 @@ export default function LinkList({
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-      {links.map(link => (
+      {links.map((link, i) => (
         <LinkCard
           key={link.id}
           link={link}
+          index={i}
           selectionMode={selectionMode}
           isSelected={selected.has(link.id)}
           onToggleSelect={() => onToggleSelect(link.id)}

@@ -15,6 +15,6 @@ export default async function Home() {
     }
   )
 
-  const { data: { user } } = await supabase.auth.getUser()
-  redirect(user ? '/dashboard' : '/login')
+  const { data: { session } } = await supabase.auth.getSession()
+  redirect(session ? '/dashboard' : '/login')
 }

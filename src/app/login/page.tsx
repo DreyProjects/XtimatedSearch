@@ -30,8 +30,11 @@ export default function LoginPage() {
       else setMessage('Revisa tu correo para confirmar tu cuenta.')
     } else {
       const { error } = await supabase.auth.signInWithPassword({ email, password })
-      if (error) setError(error.message)
-      else router.push('/dashboard')
+      if (error) {
+        setError(error.message)
+      } else {
+        window.location.href = '/dashboard'
+      }
     }
     setLoading(false)
   }
